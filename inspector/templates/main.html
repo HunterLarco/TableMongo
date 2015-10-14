@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<style>
+
+body{
+  font-size:0px;
+  cursor:default;
+  
+  background:rgb(250,250,250);
+}
+
+.header{
+  background:rgba(255,255,255,0.95);
+  
+  padding:20px 50px;
+}
+.header .title{
+  display:inline-block;
+  vertical-align:middle;
+  
+  color:rgb(51,51,51);
+  font-size: 15px;
+  font-weight:500;
+  
+  text-transform:uppercase;
+}
+.header select{
+  display:inline-block;
+  vertical-align:middle;
+  
+  font-size: 15px;
+  background:rgb(230,230,230);
+  
+  border:none;
+  margin:0px 16px;
+}
+
+table{
+  font-size:16px;
+  width:100%;
+  border-spacing:0px;
+}
+table tr td{
+  padding:4px 20px;
+}
+table tr:nth-child(2n+1){
+  background:rgb(240,240,240);
+}
+table tr:first-child{
+  font-weight:700;
+  background:rgb(200,205,205);
+}
+table tr a{
+  color:rgb(33,164,183);
+}
+table td label{
+  font-size:12px;
+  font-style:italic;
+}
+
+.none{
+  font-size:16px;
+  text-align:center;
+  padding:30px 0px;
+}
+
+</style>
+<html>
+<head>
+<meta charset='utf-8'/>
+
+<title>db Kind Viewer | {{ models.0 }}</title>
+
+<meta name='author' content='Hunter John Larco'></meta>
+<meta name='pinterest' content='nohover'></meta>
+<meta content='yes' name='apple-mobile-web-app-capable'></meta>
+<meta content='minimum-scale=1.0, width=device-width, maximum-scale=1, user-scalable=no' name='viewport'></meta>
+
+<link rel='stylesheet' href='/resources/css/global.css'/>
+<link rel='stylesheet' href='/resources/css/resets.css'/>
+
+</head>
+<body>
+
+
+<div class='header'>
+  <div class='title'>Kind</div>
+  <select id='kinds'>
+    {% for model in models %}
+    <option value='/kind/{{ model }}'>{{ model }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+{% if documents|length == 0 %}
+<div class='none'>No Entities Created</div>
+{% else %}
+<table>
+  <tr>
+    <td>serialized key<br/><label>Native</label></td>
+    <td>id<br/><label>Native</label></td>
+    {% for property in properties %}
+    <td>{{ property.0 }}<br/><label>{{ property.1.__name__ }}</label></td>
+    {% endfor %}
+  </tr>
+  {% for document in documents %}
+  <tr>
+    <td><a href='/entity/{{ document.key }}'>{{ document.key }}</a></td>
+    <td>{{ document.id }}</td>
+    {% for property in properties %}
+    <td>{{ document[property.0] }}</td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+
+<script type='text/javascript'>
+(function(){
+	
+	window.addEventListener('load', Init);
+	
+	function Init(){
+		LoadKindsBar();
+	}
+  
+  function LoadKindsBar(){
+    var select = document.getElementById('kinds');
+    select.removeAttribute('id');
+    
+    select.addEventListener('change', function(){
+      location.href = this.value;
+    });
+  }
+	
+})();
+</script>
+</body>
+</html>

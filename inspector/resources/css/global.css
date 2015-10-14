@@ -1,0 +1,11 @@
+body{
+  -webkit-touch-callout: none;
+	
+	-webkit-font-smoothing:antialiased;
+	font-family:'Arial', sans-serif;
+	font-weight:300;
+	
+	color:rgb(51,51,51);
+	
+	overflow:scroll;
+}

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<style>
+
+body{
+  font-size:0px;
+  cursor:default;
+  
+  background:rgb(250,250,250);
+}
+
+.header{
+  background:rgba(255,255,255,0.95);
+  
+  padding:20px 50px;
+}
+.header .title{
+  display:inline-block;
+  vertical-align:middle;
+  
+  color:rgb(51,51,51);
+  font-size: 15px;
+  font-weight:500;
+  
+  text-transform:uppercase;
+}
+.header select{
+  display:inline-block;
+  vertical-align:middle;
+  
+  font-size: 15px;
+  background:rgb(230,230,230);
+  
+  border:none;
+  margin:0px 16px;
+}
+.header a{
+  color:rgb(33,164,183);
+}
+
+table{
+  font-size:16px;
+  width:100%;
+  border-spacing:0px;
+}
+table tr td{
+  padding:4px 20px;
+}
+table tr:nth-child(2n+1){
+  background:rgb(240,240,240);
+}
+table tr:first-child{
+  font-weight:700;
+  background:rgb(200,205,205);
+}
+table tr a{
+  color:rgb(33,164,183);
+}
+table td label{
+  font-size:12px;
+  font-style:italic;
+}
+table td:first-child{
+  width:300px;
+}
+
+</style>
+<html>
+<head>
+<meta charset='utf-8'/>
+
+<title>db Entity Viewer | {{ entity.key }}</title>
+
+<meta name='author' content='Hunter John Larco'></meta>
+<meta name='pinterest' content='nohover'></meta>
+<meta content='yes' name='apple-mobile-web-app-capable'></meta>
+<meta content='minimum-scale=1.0, width=device-width, maximum-scale=1, user-scalable=no' name='viewport'></meta>
+
+<link rel='stylesheet' href='/resources/css/global.css'/>
+<link rel='stylesheet' href='/resources/css/resets.css'/>
+
+</head>
+<body>
+
+
+<div class='header'>
+  <div class='title'><a href='/kind/{{ kind }}'>&#8656; Kinds</a></div>
+</div>
+  
+<table>
+  <tr>
+    <td>Key</td>
+    <td>Value</td>
+  </tr>
+  <tr>
+    <td>serialized key<br/><label>Native</label></td>
+    <td>{{ entity.key }}</td>
+  </tr>
+  <tr>
+    <td>id<br/><label>Native</label></td>
+    <td>{{ entity.id }}</td>
+  </tr>
+  {% for property in properties %}
+  <tr>
+    <td>{{ property.0 }}<br/><label>{{ property.1.__name__ }}</label></td>
+    {% if property.1.__name__ == "KeyProperty" and entity[property.0] %}
+    <td><a href='/entity/{{ entity[property.0] }}'>{{ entity[property.0] }}</a></td>
+    {% else %}
+    <td>{{ entity[property.0] }}</td>
+    {% endif %}
+  </tr>
+  {% endfor %}
+</table>
+
+
+<script type='text/javascript'>
+(function(){
+	
+	window.addEventListener('load', Init);
+	
+	function Init(){
+		
+	}
+	
+})();
+</script>
+</body>
+</html>
