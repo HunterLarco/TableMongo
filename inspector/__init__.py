@@ -75,13 +75,11 @@ def get_documents(model):
 
 
 def run(port=8000, debug=False):
-  import logging
-  log = logging.getLogger('werkzeug')
-  log.setLevel(logging.ERROR)
+  if not debug:
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
   
   app.run(port=port, debug=debug)
   print('db development server running on port %s' % port)
-
-if __name__ == '__main__':
-  run(debug=True)
   
