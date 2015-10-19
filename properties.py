@@ -1,4 +1,4 @@
-# do not use this class
+# Do not use this class
 class Property(object):
   def unpack(self, value):
     return value
@@ -19,7 +19,7 @@ class BooleanProperty(Property):
     return value
 
 
-class TextProperty(Property):
+class StringProperty(Property):
   def unpack(self, value):
     if value == None: return None
     return value
@@ -29,6 +29,18 @@ class TextProperty(Property):
     if not isinstance(value, str):
       raise ValueError('StringProperty must contain str instance')
     return value
+
+
+class ByteStringProperty(Property):
+  def unpack(self, value):
+    if value == None: return None
+    return value.encode('utf-8')
+  
+  def pack(self, value):
+    if value == None: return None
+    if not isinstance(value, bytes):
+      raise ValueError('ByteStringProperty must contain bytes instance')
+    return value.decode('utf-8')
 
 
 class IntegerProperty(Property):
