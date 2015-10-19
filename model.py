@@ -11,20 +11,29 @@ rawdb = mongo.develop_database
 
 class Model(object):
   
-  # limit = 0 means no limit
   @classmethod
-  def fetch(cls, limit=0):
+  def delete_all(cls):
     collection = getattr(rawdb, cls.__name__)
-    cursor = collection.find(limit=limit, projection=[])
+    deleted = collection.count()
+    collection.drop()
+    return deleted
+  
+  # count = 0 means no limit
+  @classmethod
+  def fetch(cls, count=0, keys_only=False):
+    collection = getattr(rawdb, cls.__name__)
+    cursor = collection.find(limit=count, projection={ '_id':1 })
     
     documents = []
     
-    if limit == 0:
-      limit = cursor.count()
+    if count == 0:
+      count = cursor.count()
     
-    for i in range(limit):
+    for i in range(count):
       document = cursor.next()
-      documents.append(cls(id=str(document['_id'])))
+      
+      if keys_only: documents.append(Key(cls, str(document['_id'])))
+      else: documents.append(cls(id=str(document['_id'])))
       
     documents.reverse()
     return documents
@@ -32,6 +41,10 @@ class Model(object):
   @classmethod
   def key_from_id(cls, id):
     return Key(cls, id)
+  
+  @classmethod
+  def get_by_id(cls, id):
+    return cls.key_from_id(id).get()
   
   @classmethod
   def get_properties(cls):
@@ -43,7 +56,7 @@ class Model(object):
     return properties
   
   
-  def __init__(self, key=None, id=None):
+  def __init__(self, key=None, id=None, **kwargs):
     
     self._properties = []
     for attr in vars(self.__class__):
@@ -63,6 +76,10 @@ class Model(object):
     
     if self.key:
       self.kind = self.key.model.__name__
+    
+    for prop, value in kwargs.items():
+      if prop in self._properties:
+        setattr(self, prop, value)
   
   
   def packed(self, meta=False):
@@ -91,7 +108,7 @@ class Model(object):
         setattr(self, key, packer.unpack(value))
   
   
-  def put(self):
+  def save(self):
     collection = getattr(rawdb, self.__class__.__name__)
     if self.key == None:
       saved = collection.insert_one(self.packed())
@@ -102,6 +119,7 @@ class Model(object):
       collection.replace_one({
         '_id': ObjectId(self.key.id)
       }, self.packed())
+    return self
   
   
   def delete(self):

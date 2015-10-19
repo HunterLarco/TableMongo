@@ -40,10 +40,12 @@ class Key(object):
     formatted = encoded.decode('utf-8') 
     return formatted
   
+  # returns true if any deleted
   def delete(self):
     from .model import rawdb, ObjectId
     collection = getattr(rawdb, self.model.__name__)
-    collection.remove({ '_id': ObjectId(self.id) })
+    result = collection.remove({ '_id': ObjectId(self.id) })
+    return result['n']
   
   def get(self):
     try:
