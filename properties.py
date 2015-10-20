@@ -125,6 +125,8 @@ class Property(object):
   '   1. If a multiple property is being compared, all of the values
   '      being compared to are AND'd. Hence Prop == ['a', 'b'] finds
   '      entities where the Prop equals 'a' AND 'b'.
+  '   2. Using the logic from Note N.1, Prop != ['a', 'b'] returns the
+  '      compliment of Prop == ['a', 'b'].
   """
   
   def __eq__(self, other):
@@ -142,9 +144,9 @@ class Property(object):
   
   def __ne__(self, other):
     if self.multiple:
-      from .query import AND
+      from .query import OR
       if not isinstance(other, list): other = [other]
-      return AND(*[PropertyQuery(self, [item], '$nin') for item in other])
+      return OR(*[PropertyQuery(self, [item], '$nin') for item in other])
     return PropertyQuery(self, other, '$ne')
   
   def __le__(self, other):
