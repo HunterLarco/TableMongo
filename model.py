@@ -222,7 +222,7 @@ class Model(object):
     json = {}
     for attr in self._properties:
       packer = getattr(self.__class__, attr)
-      json[attr] = packer.pack(getattr(self, attr))
+      json[attr] = packer._pack(getattr(self, attr))
     if meta:
       json['key'] = self.key.serialize()
       json['id'] = self.key.id
@@ -249,7 +249,7 @@ class Model(object):
     for key, value in entity.items():
       if not key in reserved:
         packer = getattr(self.__class__, key)
-        setattr(self, key, packer.unpack(value))
+        setattr(self, key, packer._unpack(value))
   
   def save(self):
     """

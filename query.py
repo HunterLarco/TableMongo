@@ -1,5 +1,5 @@
 """ LOCAL IMPORTS """
-from .properties import Property
+from .properties import Property, PropertyQuery
 
 
 class AND(object):
@@ -22,6 +22,8 @@ class AND(object):
     '   <PropertyQuery propqueryN>
     ' RETURNS
     '   <AND and>
+    ' NOTES
+    '   1. May also take AND classes as arguments.
     """
     self._bson = None
     self._partialqueries = partialqueries
@@ -53,12 +55,19 @@ class AND(object):
     self._bson = { '$and': [] }
     and_query = self._bson['$and']
     
-    for partialquery in self._partialqueries:
-      and_query.append({
-        attr_map[partialquery.property]: {
-          partialquery.operator: partialquery.property.pack(partialquery.value)
-        }
-      })
+    # recursively integrate AND'ed queries
+    def recurse(partialqueries):
+      for partialquery in partialqueries:
+        if isinstance(partialquery, PropertyQuery):
+          and_query.append({
+            attr_map[partialquery.property]: {
+              partialquery.operator: partialquery.property._pack(partialquery.value)
+            }
+          })
+        elif isinstance(partialquery, self.__class__):
+          recurse(partialquery._partialqueries)
+    
+    recurse(self._partialqueries)
     
     return self._bson
         

@@ -36,6 +36,49 @@ class Property(object):
   '   how to unpack the same data.
   """
   
+  def __init__(self, multiple=False):
+    self.multiple = multiple
+  
+  def _pack(self, value):
+    """
+    ' PURPOSE
+    '   Private method called by the db classes in order to pack
+    '   a property. The normal 'pack' method packs a single value
+    '   whereas '_pack' acounts for multiple values and delegates
+    '   to 'pack' while forming an array for saving. Thus meaning
+    '   no additional code needs to be written per property to support
+    '   the multiple keyword.
+    ' PARAMETERS
+    '   <object value> value to pack
+    ' RETURNS
+    '   <list object value> if self.multiple
+    '   <object value> if not self.multiple
+    """
+    if self.multiple:
+      if not isinstance(value, list): raise ValueError('Property with keyword multiple must contain a list of values')
+      return [self.pack(obj) for obj in value]
+    else: return self.pack(value)
+  
+  def _unpack(self, value):
+    """
+    ' PURPOSE
+    '   Private method called by the db classes in order to unpack
+    '   a property. The normal 'unpack' method packs a single value
+    '   whereas '_unpack' acounts for multiple values and delegates
+    '   to 'unpack' while forming an array for saving. Thus meaning
+    '   no additional code needs to be written per property to support
+    '   the multiple keyword.
+    ' PARAMETERS
+    '   <object value> value to unpack
+    ' RETURNS
+    '   <list object value> if self.multiple
+    '   <object value> if not self.multiple
+    """
+    if self.multiple:
+      if not isinstance(value, list): raise ValueError('Property with keyword multiple must contain a list of values')
+      return [self.unpack(obj) for obj in value]
+    else: return self.unpack(value)
+  
   def unpack(self, value):
     """
     ' PURPOSE
@@ -69,76 +112,45 @@ class Property(object):
     """
     return id(self)
   
+  """ COMPARISON OPERATORS BELOW """
+  """
+  ' PURPOSE
+  '   When this property is compared with a value, a PropertyQuery
+  '   is returned which will late be used to construct a query request.
+  ' PARAMETERS
+  '   <object other>
+  ' RETURNS
+  '   <PropertyQuery propquery>
+  ' NOTES
+  '   1. If a multiple property is being compared, all of the values
+  '      being compared to are AND'd. Hence Prop == ['a', 'b'] finds
+  '      entities where the Prop equals 'a' AND 'b'.
+  """
+  
   def __eq__(self, other):
-    """
-    ' PURPOSE
-    '   When this property is compared with a value, a PropertyQuery
-    '   is returned which will late be used to construct a query request.
-    ' PARAMETERS
-    '   <object other>
-    ' RETURNS
-    '   <PropertyQuery propquery>
-    """
+    if self.multiple:
+      from .query import AND
+      if not isinstance(other, list): other = [other]
+      return AND(*[PropertyQuery(self, [item], '$in') for item in other])
     return PropertyQuery(self, other, '$eq')
   
   def __lt__(self, other):
-    """
-    ' PURPOSE
-    '   When this property is compared with a value, a PropertyQuery
-    '   is returned which will late be used to construct a query request.
-    ' PARAMETERS
-    '   <object other>
-    ' RETURNS
-    '   <PropertyQuery propquery>
-    """
     return PropertyQuery(self, other, '$lt')
   
   def __gt__(self, other):
-    """
-    ' PURPOSE
-    '   When this property is compared with a value, a PropertyQuery
-    '   is returned which will late be used to construct a query request.
-    ' PARAMETERS
-    '   <object other>
-    ' RETURNS
-    '   <PropertyQuery propquery>
-    """
     return PropertyQuery(self, other, '$gt')
   
   def __ne__(self, other):
-    """
-    ' PURPOSE
-    '   When this property is compared with a value, a PropertyQuery
-    '   is returned which will late be used to construct a query request.
-    ' PARAMETERS
-    '   <object other>
-    ' RETURNS
-    '   <PropertyQuery propquery>
-    """
+    if self.multiple:
+      from .query import AND
+      if not isinstance(other, list): other = [other]
+      return AND(*[PropertyQuery(self, [item], '$nin') for item in other])
     return PropertyQuery(self, other, '$ne')
   
   def __le__(self, other):
-    """
-    ' PURPOSE
-    '   When this property is compared with a value, a PropertyQuery
-    '   is returned which will late be used to construct a query request.
-    ' PARAMETERS
-    '   <object other>
-    ' RETURNS
-    '   <PropertyQuery propquery>
-    """
     return PropertyQuery(self, other, '$lte')
   
   def __ge__(self, other):
-    """
-    ' PURPOSE
-    '   When this property is compared with a value, a PropertyQuery
-    '   is returned which will late be used to construct a query request.
-    ' PARAMETERS
-    '   <object other>
-    ' RETURNS
-    '   <PropertyQuery propquery>
-    """
     return PropertyQuery(self, other, '$gte')
 
 
@@ -217,3 +229,20 @@ class KeyProperty(Property):
     if not isinstance(value, Key):
       raise ValueError('KeyProperty must contain Key instance')
     return value.serialize()
+
+
+class ModelProperty(KeyProperty):
+  
+  def __init__(self, model, *args, **kwargs):
+    super(KeyProperty, self).__init__(*args, **kwargs)
+    self._model = model
+  
+  def unpack(self, value):
+    return super(ModelProperty, self).unpack(value).get()
+  
+  def pack(self, value):
+    if value == None: return None
+    if not isinstance(value, self._model):
+      raise ValueError('ModelProperty must contain %s instance' % self._model.__name__)
+    return super(ModelProperty, self).pack(value.key)
+
