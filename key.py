@@ -19,10 +19,10 @@ class Key(object):
   '   Model upfront. For example, the following code grabs an entity
   '   and then instantiates the corresponding Model subclass with
   '   the entity's data and functions already added in.
-  ' 
+  '
   '   ->  entity = Key(urlsafe = 'askjhd872hd92jio34==').get()
   """
-  
+
   @classmethod
   def get_model(self, modelname):
     """
@@ -43,7 +43,7 @@ class Key(object):
         break
     else:
       raise ValueError('Invalid modelname')
-  
+
   def __init__(self, model=None, id=None, urlsafe=None, serial=None):
     """
     ' PURPOSE
@@ -65,7 +65,7 @@ class Key(object):
       self.model = self.get_model(modelname)
     elif urlsafe:
       try:
-        decoded = base64.b64decode(urlsafe).decode('utf-8') 
+        decoded = base64.b64decode(urlsafe).decode('utf-8')
         modelname, self.id = tuple(decoded.split(':'))
       except:
         raise ValueError('Malformed urlsafe key')
@@ -74,7 +74,7 @@ class Key(object):
       self.model, self.id = (model, id)
     else:
       raise ValueError('Expected model and id or urlsafe')
-  
+
   def serialize(self):
     """
     ' PURPOSE
@@ -86,7 +86,7 @@ class Key(object):
     '   <str serialized>
     """
     return '%s:%s' % (self.model.__name__, self.id)
-  
+
   def urlsafe(self):
     """
     ' PURPOSE
@@ -99,9 +99,9 @@ class Key(object):
     """
     base_string = self.serialize()
     encoded = base64.b64encode(bytes(base_string, 'utf8'))
-    formatted = encoded.decode('utf-8') 
+    formatted = encoded.decode('utf-8')
     return formatted
-  
+
   def delete(self):
     """
     ' PURPOSE
@@ -115,7 +115,7 @@ class Key(object):
     collection = getattr(rawdb, self.model.__name__)
     result = collection.remove({ '_id': ObjectId(self.id) })
     return result['n']
-  
+
   def get(self):
     """
     ' PURPOSE
@@ -130,7 +130,7 @@ class Key(object):
       return self.model(key=self)
     except:
       return None
-  
+
   def __repr__(self):
     """
     ' PURPOSE
@@ -141,7 +141,7 @@ class Key(object):
     '   <str repr_value>
     """
     return '<db.Key %s>' % self.serialize()
-  
+
   def __str__(self):
     """
     ' PURPOSE

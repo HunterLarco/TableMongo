@@ -5,7 +5,7 @@ class PropertyQuery(object):
   '   a property is compared to any value. This is used
   '   to track query filters. See the Model class for details.
   """
-  
+
   def __init__(self, prop, val, operator):
     """
     ' PURPOSE
@@ -35,7 +35,7 @@ class Property(object):
   '   to store their value in a JSON document as well as to dictate
   '   how to unpack the same data.
   """
-  
+
   def unpack(self, value):
     """
     ' PURPOSE
@@ -46,7 +46,7 @@ class Property(object):
     '   <object value> unpacked value
     """
     raise ValueError('All properties must be a subclass of Property and have overridden unpack')
-  
+
   def pack(self, value):
     """
     ' PURPOSE
@@ -57,7 +57,7 @@ class Property(object):
     '   <object value> packed value
     """
     raise ValueError('All properties must be a subclass of Property and have overridden pack')
-  
+
   def __hash__(self):
     """
     ' PURPOSE
@@ -68,7 +68,7 @@ class Property(object):
     '   Nothing
     """
     return id(self)
-  
+
   def __eq__(self, other):
     """
     ' PURPOSE
@@ -80,7 +80,7 @@ class Property(object):
     '   <PropertyQuery propquery>
     """
     return PropertyQuery(self, other, '$eq')
-  
+
   def __lt__(self, other):
     """
     ' PURPOSE
@@ -92,7 +92,7 @@ class Property(object):
     '   <PropertyQuery propquery>
     """
     return PropertyQuery(self, other, '$lt')
-  
+
   def __gt__(self, other):
     """
     ' PURPOSE
@@ -104,7 +104,7 @@ class Property(object):
     '   <PropertyQuery propquery>
     """
     return PropertyQuery(self, other, '$gt')
-  
+
   def __ne__(self, other):
     """
     ' PURPOSE
@@ -116,7 +116,7 @@ class Property(object):
     '   <PropertyQuery propquery>
     """
     return PropertyQuery(self, other, '$ne')
-  
+
   def __le__(self, other):
     """
     ' PURPOSE
@@ -128,7 +128,7 @@ class Property(object):
     '   <PropertyQuery propquery>
     """
     return PropertyQuery(self, other, '$lte')
-  
+
   def __ge__(self, other):
     """
     ' PURPOSE
@@ -143,13 +143,18 @@ class Property(object):
 
 
 """ BASIC PROPERTIES BELOW """
-
+# [Ben-G] TODO: These properties have a lot of redundant code that is mostly
+# independent of the underlying type of the Property. I feel like 70% of this
+# code can be removed.
+# Property should be a wrapper around any type that is serializable, the code
+# should then be identical for any serializable
+# (checking for none + type checking)
 class BooleanProperty(Property):
-  
+
   def unpack(self, value):
     if value == None: return None
     return value
-  
+
   def pack(self, value):
     if value == None: return None
     if not isinstance(value, bool):
@@ -161,7 +166,7 @@ class StringProperty(Property):
   def unpack(self, value):
     if value == None: return None
     return value
-  
+
   def pack(self, value):
     if value == None: return None
     if not isinstance(value, str):
@@ -173,7 +178,7 @@ class ByteStringProperty(Property):
   def unpack(self, value):
     if value == None: return None
     return value.encode('utf-8')
-  
+
   def pack(self, value):
     if value == None: return None
     if not isinstance(value, bytes):
@@ -185,7 +190,7 @@ class IntegerProperty(Property):
   def unpack(self, value):
     if value == None: return None
     return value
-  
+
   def pack(self, value):
     if value == None: return None
     if not isinstance(value, int):
@@ -197,7 +202,7 @@ class FloatProperty(Property):
   def unpack(self, value):
     if value == None: return None
     return value
-  
+
   def pack(self, value):
     if value == None: return None
     if not isinstance(value, float):
@@ -210,7 +215,7 @@ class KeyProperty(Property):
     if value == None: return None
     from .key import Key
     return Key(serial=value)
-  
+
   def pack(self, value):
     if value == None: return None
     from .key import Key
