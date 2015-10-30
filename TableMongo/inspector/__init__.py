@@ -11,6 +11,8 @@ from flask import render_template
 @app.route('/')
 def main():
   models = get_models()
+  if len(models) == 0:
+    return redirect('/kind/NoModels', code=302)
   return redirect('/kind/%s' % models[0], code=302)
 
 
@@ -20,6 +22,7 @@ def kindviewer(kind):
   
   if not kind in models:
     return abort(404)
+  
   models.remove(kind)
   models = [kind] + models
   
@@ -74,7 +77,7 @@ def get_documents(model):
 
 
 
-def run(port=8000, debug=False):
+def run(port=8000, debug=True):
   if not debug:
     import logging
     log = logging.getLogger('werkzeug')

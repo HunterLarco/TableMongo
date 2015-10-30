@@ -1,0 +1,4 @@
+dist/*
+build/*
+TableMongo.egg-info/*
+*.pyc
