@@ -21,6 +21,23 @@ class PropertyQuery(object):
     self.property = prop
     self.value = val
     self.operator = operator
+  
+  def __repr__(self):
+    """
+    ' see self.__str__
+    """
+    return self.__str__()
+  
+  def __str__(self):
+    """
+    ' PURPOSE
+    '   Condensed, unique representation of the PropertyQuery data.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <str str_value>
+    """
+    return 'PropertyQuery(%s %s %s)' % (self.property, self.operator, repr(self.value))
 
 
 

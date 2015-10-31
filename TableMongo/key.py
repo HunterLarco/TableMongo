@@ -133,14 +133,9 @@ class Key(object):
   
   def __repr__(self):
     """
-    ' PURPOSE
-    '   Condensed, unique representation of the Key data.
-    ' PARAMETERS
-    '   None
-    ' RETURNS
-    '   <str repr_value>
+    ' see self.__str__
     """
-    return '<db.Key %s>' % self.serialize()
+    return self.__str__()
   
   def __str__(self):
     """
@@ -151,7 +146,7 @@ class Key(object):
     ' RETURNS
     '   <str str_value>
     """
-    return '<db.Key %s>' % self.serialize()
+    return 'Key(\'%s\', \'%s\')' % (self.model.__name__, self.id)
 
 
 """ LOCAL IMPORTS (to allow circular imports) """

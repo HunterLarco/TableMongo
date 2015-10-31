@@ -144,6 +144,23 @@ class Query(object):
       if keys_only:
         yield key
       yield key.get()
+  
+  def __repr__(self):
+    """
+    ' see self.__str__
+    """
+    return self.__str__()
+  
+  def __str__(self):
+    """
+    ' PURPOSE
+    '   Condensed, unique representation of the Query data.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <str str_value>
+    """
+    return '%s(kind=\'%s\', filters=%s)' % (self.__class__.__name__, self._model.__name__, self._logic_chain)
 
 
 class LogicOperator(object):
@@ -214,6 +231,28 @@ class AND(LogicOperator):
         and_query.append(partialquery.bson(modelcls))
     
     return self._bson
+  
+  def __repr__(self):
+    """
+    ' see self.__str__
+    """
+    return self.__str__()
+  
+  def __str__(self):
+    """
+    ' PURPOSE
+    '   Condensed, unique representation of the AND data.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <str str_value>
+    """
+    parts = []
+    
+    for part in self._partialqueries:
+      parts.append(repr(part))
+    
+    return 'AND(%s)' % ', '.join(parts)
 
 
 class OR(LogicOperator):
@@ -279,3 +318,26 @@ class OR(LogicOperator):
         or_query.append(partialquery.bson(modelcls))
     
     return self._bson
+  
+  def __repr__(self):
+    """
+    ' see self.__str__
+    """
+    return self.__str__()
+  
+  def __str__(self):
+    """
+    ' PURPOSE
+    '   Condensed, unique representation of the OR data.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <str str_value>
+    """
+    parts = []
+    
+    for part in self._partialqueries:
+      parts.append(repr(part))
+    
+    return 'OR(%s)' % ', '.join(parts)
+  

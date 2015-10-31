@@ -284,3 +284,27 @@ class Model(object):
     '   Nothing
     """
     self.key.delete()
+  
+  def __repr__(self):
+    """
+    ' see self.__str__
+    """
+    return self.__str__()
+  
+  def __str__(self):
+    """
+    ' PURPOSE
+    '   Condensed, unique representation of the Model data.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <str str_value>
+    """
+    props = []
+    
+    for name, _ in (self.get_properties() + [('key', 0)]):
+      val = getattr(self, name)
+      if not val is None:
+        props.append('%s=%s' % (name, repr(val)))
+    
+    return '%s(%s)' % (self.__class__.__name__, ', '.join(props))
