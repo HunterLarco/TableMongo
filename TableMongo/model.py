@@ -15,6 +15,22 @@ mongo = MongoClient('localhost', 27017)
 rawdb = mongo.develop_database
 
 
+class PropertiedClass(type):
+  """
+  ' PURPOSE
+  '   Meta Class to Model which upon Model creation investigates
+  '   all properties and loads them with associated kind data.
+  '   AKA. Finds all properties and tells them which model they belong to.
+  """
+  
+  def __new__(cls, name, parents, dct):
+    for key, value in dct.items():
+      if isinstance(value, Property):
+        value._load_meta(kind=cls, name=key)
+    
+    return super(PropertiedClass, cls).__new__(cls, name, parents, dct)
+
+
 class Model(object):
   """
   ' PURPOSE
@@ -50,6 +66,8 @@ class Model(object):
   '
   '   -> matches = User.query(User.fullname == 'Jane Doe', User.age < 25, User.age > 18)
   """
+  
+  __metaclass__ = PropertiedClass
   
   @classmethod
   def _collection(cls):

@@ -79,6 +79,10 @@ class Property(object):
   '   how to unpack the same data.
   """
   
+  def _load_meta(self, kind=None, name=None):
+    self._kind = kind
+    self._name = name
+  
   def __init__(self, multiple=False):
     self.multiple = multiple
   
@@ -203,6 +207,23 @@ class Property(object):
   
   def __pos__(self):
     return SortDescriptor(self, SortDescriptor.ASCENDING)
+  
+  def __repr__(self):
+    """
+    ' see self.__str__
+    """
+    return self.__str__()
+  
+  def __str__(self):
+    """
+    ' PURPOSE
+    '   Condensed, unique representation of the Property's data.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <str str_value>
+    """
+    return '%s(\'%s\')' % (self.__class__.__name__, self._name)
 
 
 """ BASIC PROPERTIES BELOW """
