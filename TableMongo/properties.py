@@ -24,6 +24,32 @@ class PropertyQuery(object):
 
 
 
+class SortDescriptor(object):
+  """
+  ' PURPOSE
+  '   Used to describe sort directions. Created whenever a property
+  '   is negated or positive-thing : +Property or -Property.
+  """
+  
+  DESCENDING = 'down'
+  ASCENDING = 'up'
+  
+  def __init__(self, prop, direction):
+    """
+    ' PURPOSE
+    '   Initializes this class with the original property as
+    '   well as direction based on the class variables.
+    ' PARAMETERS
+    '   <Property prop>
+    '   <str direction>
+    ' RETURNS
+    '   Nothing
+    """
+    self.property = prop
+    self.direction = direction
+
+
+
 """
 ' WARNING: DO NOT USE THIS CLASS AS A MODEL PROPERTY
 """
@@ -88,8 +114,8 @@ class Property(object):
     ' RETURNS
     '   <object value> unpacked value
     """
-    raise ValueError('All properties must be a subclass of Property and have overridden unpack')
-  
+    raise NotImplementedError()
+      
   def pack(self, value):
     """
     ' PURPOSE
@@ -99,7 +125,7 @@ class Property(object):
     ' RETURNS
     '   <object value> packed value
     """
-    raise ValueError('All properties must be a subclass of Property and have overridden pack')
+    raise NotImplementedError()
   
   def __hash__(self):
     """
@@ -154,6 +180,12 @@ class Property(object):
   
   def __ge__(self, other):
     return PropertyQuery(self, other, '$gte')
+  
+  def __neg__(self):
+    return SortDescriptor(self, SortDescriptor.DESCENDING)
+  
+  def __pos__(self):
+    return SortDescriptor(self, SortDescriptor.ASCENDING)
 
 
 """ BASIC PROPERTIES BELOW """
