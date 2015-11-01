@@ -6,6 +6,28 @@ class PropertyQuery(object):
   '   to track query filters. See the Model class for details.
   """
   
+  INVERSE_OPERTORS = {
+    '==': '!=',
+    '<': '>=',
+    '>': '<=',
+    '!=': '==',
+    '<=': '>',
+    '>=': '<',
+    'in': 'not in',
+    'not in': 'in'
+  }
+  
+  BSON_OPERATORS = {
+    '==': '$eq',
+    '<': '$lt',
+    '>': '$gt',
+    '!=': '$ne',
+    '<=': '$lte',
+    '>=': '$gte',
+    'in': '$in',
+    'not in': '$nin'
+  }
+  
   def __init__(self, prop, val, operator):
     """
     ' PURPOSE
@@ -21,6 +43,19 @@ class PropertyQuery(object):
     self.property = prop
     self.value = val
     self.operator = operator
+  
+  def flipped(self):
+    """
+    ' PURPOSE
+    '   Returns a new PropertyQuery object containing the
+    '   inverted comparison of this PropertyQuery. AKA flips the
+    '   operator.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <PropertyQuery prop_query>
+    """
+    return PropertyQuery(self.property, self.value, self.INVERSE_OPERTORS[self.operator])
   
   def __repr__(self):
     """
@@ -196,36 +231,41 @@ class Property(object):
   """
   
   def __eq__(self, other):
-    if self.multiple:
-      from .query import AND
-      if not isinstance(other, list): other = [other]
-      return AND(*[PropertyQuery(self, [item], '$in') for item in other])
-    return PropertyQuery(self, other, '$eq')
+    if self._multiple: return self._contains(other)
+    return PropertyQuery(self, other, '==')
   
   def __lt__(self, other):
-    return PropertyQuery(self, other, '$lt')
+    return PropertyQuery(self, other, '<')
   
   def __gt__(self, other):
-    return PropertyQuery(self, other, '$gt')
+    return PropertyQuery(self, other, '>')
   
   def __ne__(self, other):
-    if self.multiple:
-      from .query import OR
-      if not isinstance(other, list): other = [other]
-      return OR(*[PropertyQuery(self, [item], '$nin') for item in other])
-    return PropertyQuery(self, other, '$ne')
+    if self._multiple: return self._not_contains(other)
+    return PropertyQuery(self, other, '!=')
   
   def __le__(self, other):
-    return PropertyQuery(self, other, '$lte')
+    return PropertyQuery(self, other, '<=')
   
   def __ge__(self, other):
-    return PropertyQuery(self, other, '$gte')
+    return PropertyQuery(self, other, '>=')
   
   def __neg__(self):
     return SortDescriptor(self, SortDescriptor.DESCENDING)
   
   def __pos__(self):
     return SortDescriptor(self, SortDescriptor.ASCENDING)
+  
+  def _contains(self, other):
+    if not self._multiple:
+      raise BadValueError('Expected multiple property to sort using in: %s' % self._name)
+    from .query import AND
+    if not isinstance(other, list): other = [other]
+    return AND(*[PropertyQuery(self, [item], 'in') for item in other])
+  
+  def _not_contains(self, other):
+    from .query import NOT
+    return NOT(self._contains(other))
   
   def __repr__(self):
     """

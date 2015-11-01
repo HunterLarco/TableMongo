@@ -176,6 +176,19 @@ class AND(LogicOperator):
   '   -> db.AND(User.email == 'john@doe.com', User.age < 25)
   """
   
+  def flipped(self):
+    """
+    ' PURPOSE
+    '   Returns a new AND filter containing the inverted
+    '   comparison of this AND. AKA flips the logic of this filter.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <AND inverted_and>
+    """
+    partialqueries = [query.flipped() for query in self._partialqueries]
+    return OR(*partialqueries)
+  
   def __init__(self, *partialqueries):
     """
     ' PURPOSE
@@ -224,7 +237,7 @@ class AND(LogicOperator):
       if isinstance(partialquery, PropertyQuery):
         and_query.append({
           attr_map[partialquery.property]: {
-            partialquery.operator: partialquery.property._pack(partialquery.value)
+            partialquery.BSON_OPERATORS[partialquery.operator]: partialquery.property._pack(partialquery.value)
           }
         })
       elif isinstance(partialquery, LogicOperator):
@@ -263,6 +276,19 @@ class OR(LogicOperator):
   ' EXAMPLE USAGE
   '   -> db.OR(User.email == 'john@doe.com', User.age < 25)
   """
+  
+  def flipped(self):
+    """
+    ' PURPOSE
+    '   Returns a new OR filter containing the inverted
+    '   comparison of this OR. AKA flips the logic of this filter.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <OR inverted_or>
+    """
+    partialqueries = [query.flipped() for query in self._partialqueries]
+    return AND(*partialqueries)
   
   def __init__(self, *partialqueries):
     """
@@ -311,7 +337,7 @@ class OR(LogicOperator):
       if isinstance(partialquery, PropertyQuery):
         or_query.append({
           attr_map[partialquery.property]: {
-            partialquery.operator: partialquery.property._pack(partialquery.value)
+            partialquery.BSON_OPERATORS[partialquery.operator]: partialquery.property._pack(partialquery.value)
           }
         })
       elif isinstance(partialquery, LogicOperator):
@@ -340,4 +366,78 @@ class OR(LogicOperator):
       parts.append(repr(part))
     
     return 'OR(%s)' % ', '.join(parts)
+
+
+class NOT(LogicOperator):
+  """
+  ' PURPOSE
+  '   Concatinates many property queries into a
+  '   single not statement.
+  ' EXAMPLE USAGE
+  '   -> db.NOT(db.AND(User.email == 'john@doe.com', User.age < 25))
+  """
   
+  def __init__(self, logic_operator):
+    """
+    ' PURPOSE
+    '   Initializes the NOT with a single logic operator.
+    ' PARAMETERS
+    '   <LogicOperator logic_operator>
+    ' RETURNS
+    '   <NOT not>
+    """
+    self._bson = None
+    self._logic_operator = logic_operator
+  
+  def flipped(self):
+    """
+    ' PURPOSE
+    '   Returns a new LogicOperator filter containing the inverted
+    '   comparison of this NOT. AKA flips the logic of this filter.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <LogicOperator inverted_not>
+    """
+    return self._logic_operator
+  
+  def bson(self, modelcls):
+    """
+    ' PURPOSE
+    '   Given a Model subclass class. Convert the property queries
+    '   into a PyMongo compatible BSON query.
+    '   * see https://docs.mongodb.org/manual/reference/operator/query/ *
+    ' PARAMETERS
+    '   <class MyModel extends Model>
+    ' RETURNS
+    '   <dict bson>
+    ' NOTES
+    '   1. Caches the result (memoize)
+    """
+    if not isinstance(self._logic_operator, LogicOperator):
+      raise ValueError('Expected subclass of LogicOperator. Instead got: %s' % type(self._logic_operator))
+    
+    if not self._logic_operator: return {}
+    if self._bson: return self._bson
+    
+    # De Morgan's Law
+    not_query = self._logic_operator.flipped()
+    return not_query.bson(modelcls)
+  
+  def __repr__(self):
+    """
+    ' see self.__str__
+    """
+    return self.__str__()
+  
+  def __str__(self):
+    """
+    ' PURPOSE
+    '   Condensed, unique representation of the NOT data.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <str str_value>
+    """
+    return 'NOT(%s)' % self._logic_operator
+
