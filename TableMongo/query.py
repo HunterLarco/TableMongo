@@ -64,7 +64,7 @@ class Query(object):
     new_login_chain = AND(self.logic_chain, *args)
     return Query(self._model, new_login_chain)
   
-  def fetch(self, offset=0, count=0, keys_only=False):
+  def fetch(self, count=0, offset=0, keys_only=False):
     """
     ' PURPOSE
     '   Returns a subsection of the queried models.
