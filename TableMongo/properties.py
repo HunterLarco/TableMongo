@@ -66,6 +66,9 @@ class SortDescriptor(object):
     self.direction = direction
 
 
+class BadValueError(Exception):
+  pass
+
 
 """
 ' WARNING: DO NOT USE THIS CLASS AS A MODEL PROPERTY
@@ -83,8 +86,13 @@ class Property(object):
     self._kind = kind
     self._name = name
   
-  def __init__(self, multiple=False):
-    self.multiple = multiple
+  def __init__(self, multiple=False, default=None, required=False):
+    if not default is None and required:
+      raise ValueError('A property cannot have a default value and be required')
+    
+    self._multiple = multiple
+    self._default = default
+    self._required = required
   
   def _pack(self, value):
     """
@@ -101,10 +109,17 @@ class Property(object):
     '   <list object value> if self.multiple
     '   <object value> if not self.multiple
     """
-    if self.multiple:
-      if not isinstance(value, list): raise ValueError('Property with keyword multiple must contain a list of values')
+    if value == None:
+      if self._required: raise BadValueError('Entity has uninitialized properties: %s' % self._name)
+      
+      if self._default == None: return None
+      else: return self._pack(self._default)
+    
+    if self._multiple:
+      if not isinstance(value, list): raise BadValueError('Expected list or tuple, got %s' % value)
       return [self.pack(obj) for obj in value]
-    else: return self.pack(value)
+    
+    return self.pack(value)
   
   def _unpack(self, value):
     """
@@ -121,8 +136,12 @@ class Property(object):
     '   <list object value> if self.multiple
     '   <object value> if not self.multiple
     """
-    if self.multiple:
-      if not isinstance(value, list): raise ValueError('Property with keyword multiple must contain a list of values')
+    if value == None:
+      if self._default == None: return None
+      else: return self._unpack(self._default)
+    
+    if self._multiple:
+      if not isinstance(value, list): return [self.unpack(value)]
       return [self.unpack(obj) for obj in value]
     else: return self.unpack(value)
   
@@ -231,11 +250,9 @@ class Property(object):
 class BooleanProperty(Property):
   
   def unpack(self, value):
-    if value == None: return None
     return value
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, bool):
       raise ValueError('BooleanProperty must contain bool instance')
     return value
@@ -243,11 +260,9 @@ class BooleanProperty(Property):
 
 class StringProperty(Property):
   def unpack(self, value):
-    if value == None: return None
     return value
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, str):
       raise ValueError('StringProperty must contain str instance')
     return value
@@ -255,11 +270,9 @@ class StringProperty(Property):
 
 class ByteStringProperty(Property):
   def unpack(self, value):
-    if value == None: return None
     return value.encode('utf-8')
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, bytes):
       raise ValueError('ByteStringProperty must contain bytes instance')
     return value.decode('utf-8')
@@ -267,11 +280,9 @@ class ByteStringProperty(Property):
 
 class IntegerProperty(Property):
   def unpack(self, value):
-    if value == None: return None
     return value
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, int):
       raise ValueError('IntegerProperty must contain int instance')
     return value
@@ -279,11 +290,9 @@ class IntegerProperty(Property):
 
 class FloatProperty(Property):
   def unpack(self, value):
-    if value == None: return None
     return value
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, float):
       raise ValueError('FloatProperty must contain float instance')
     return value
@@ -291,12 +300,10 @@ class FloatProperty(Property):
 
 class KeyProperty(Property):
   def unpack(self, value):
-    if value == None: return None
     from .key import Key
     return Key(serial=value)
   
   def pack(self, value):
-    if value == None: return None
     from .key import Key
     if not isinstance(value, Key):
       raise ValueError('KeyProperty must contain Key instance')
@@ -313,7 +320,6 @@ class ModelProperty(KeyProperty):
     return super(ModelProperty, self).unpack(value).get()
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, self._model):
       raise ValueError('ModelProperty must contain %s instance' % self._model.__name__)
     return super(ModelProperty, self).pack(value.key)
