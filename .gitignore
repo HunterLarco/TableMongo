@@ -2,4 +2,4 @@ dist/*
 build/*
 TableMongo.egg-info/*
 *.pyc
-tests/*
+tests/playground.py
