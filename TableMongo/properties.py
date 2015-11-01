@@ -17,17 +17,6 @@ class PropertyQuery(object):
     'not in': 'in'
   }
   
-  BSON_OPERATORS = {
-    '==': '$eq',
-    '<': '$lt',
-    '>': '$gt',
-    '!=': '$ne',
-    '<=': '$lte',
-    '>=': '$gte',
-    'in': '$in',
-    'not in': '$nin'
-  }
-  
   def __init__(self, prop, val, operator):
     """
     ' PURPOSE

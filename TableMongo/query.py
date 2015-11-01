@@ -44,7 +44,7 @@ class Query(object):
     '   <Iterator cursor>
     """
     collection = self._model._collection()
-    bson = self._logic_chain.bson(self._model)
+    bson = self._logic_chain.bson()
     cursor = collection.find(bson, projection={ '_id':1 })
     return cursor
   
@@ -164,7 +164,17 @@ class Query(object):
 
 
 class LogicOperator(object):
-  pass
+  
+  BSON_OPERATORS = {
+    '==': '$eq',
+    '<': '$lt',
+    '>': '$gt',
+    '!=': '$ne',
+    '<=': '$lte',
+    '>=': '$gte',
+    'in': '$in',
+    'not in': '$nin'
+  }
 
 
 class AND(LogicOperator):
@@ -206,7 +216,7 @@ class AND(LogicOperator):
     self._bson = None
     self._partialqueries = partialqueries
   
-  def bson(self, modelcls):
+  def bson(self):
     # TODO make each property aware of it's name
     """
     ' PURPOSE
@@ -223,25 +233,18 @@ class AND(LogicOperator):
     if not self._partialqueries: return {}
     if self._bson: return self._bson
     
-    attr_map = {}
-    
-    for attr in vars(modelcls):
-      val = getattr(modelcls, attr)
-      if isinstance(val, Property):
-        attr_map[val] = attr
-    
     self._bson = { '$and': [] }
     and_query = self._bson['$and']
     
     for partialquery in self._partialqueries:
       if isinstance(partialquery, PropertyQuery):
         and_query.append({
-          attr_map[partialquery.property]: {
-            partialquery.BSON_OPERATORS[partialquery.operator]: partialquery.property._pack(partialquery.value)
+          partialquery.property._name: {
+            self.BSON_OPERATORS[partialquery.operator]: partialquery.property._pack(partialquery.value)
           }
         })
       elif isinstance(partialquery, LogicOperator):
-        and_query.append(partialquery.bson(modelcls))
+        and_query.append(partialquery.bson())
     
     return self._bson
   
@@ -307,7 +310,7 @@ class OR(LogicOperator):
     self._bson = None
     self._partialqueries = partialqueries
   
-  def bson(self, modelcls):
+  def bson(self):
     """
     ' PURPOSE
     '   Given a Model subclass class. Convert the property queries
@@ -323,25 +326,18 @@ class OR(LogicOperator):
     if not self._partialqueries: return {}
     if self._bson: return self._bson
     
-    attr_map = {}
-    
-    for attr in vars(modelcls):
-      val = getattr(modelcls, attr)
-      if isinstance(val, Property):
-        attr_map[val] = attr
-    
     self._bson = { '$or': [] }
     or_query = self._bson['$or']
     
     for partialquery in self._partialqueries:
       if isinstance(partialquery, PropertyQuery):
         or_query.append({
-          attr_map[partialquery.property]: {
-            partialquery.BSON_OPERATORS[partialquery.operator]: partialquery.property._pack(partialquery.value)
+          partialquery.property._name: {
+            self.BSON_OPERATORS[partialquery.operator]: partialquery.property._pack(partialquery.value)
           }
         })
       elif isinstance(partialquery, LogicOperator):
-        or_query.append(partialquery.bson(modelcls))
+        or_query.append(partialquery.bson())
     
     return self._bson
   
@@ -401,7 +397,7 @@ class NOT(LogicOperator):
     """
     return self._logic_operator
   
-  def bson(self, modelcls):
+  def bson(self):
     """
     ' PURPOSE
     '   Given a Model subclass class. Convert the property queries
@@ -422,7 +418,7 @@ class NOT(LogicOperator):
     
     # De Morgan's Law
     not_query = self._logic_operator.flipped()
-    return not_query.bson(modelcls)
+    return not_query.bson()
   
   def __repr__(self):
     """
