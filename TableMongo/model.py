@@ -1,7 +1,7 @@
 """ LOCAL IMPORTS """
 from .properties import Property, PropertyQuery
 from .key import Key
-from . import query
+from .query import *
 
 
 """ MONGO IMPORTS """
@@ -13,6 +13,22 @@ from bson.errors import InvalidId
 """ MONGO DATABASE """
 mongo = MongoClient('localhost', 27017)
 rawdb = mongo.develop_database
+
+
+class PropertiedClass(type):
+  """
+  ' PURPOSE
+  '   Meta Class to Model which upon Model creation investigates
+  '   all properties and loads them with associated kind data.
+  '   AKA. Finds all properties and tells them which model they belong to.
+  """
+  
+  def __new__(cls, name, parents, dct):
+    for key, value in dct.items():
+      if isinstance(value, Property):
+        value._load_meta(kind=cls, name=key)
+    
+    return super(PropertiedClass, cls).__new__(cls, name, parents, dct)
 
 
 class Model(object):
@@ -48,8 +64,22 @@ class Model(object):
   '   This code queries for the first 10 users with the name 'Jane Doe'
   '   and an age '18 < age < 25'
   '
-  '   -> matches = User.fetch(User.fullname == 'Jane Doe', User.age < 25, User.age > 18, count=10)
+  '   -> matches = User.query(User.fullname == 'Jane Doe', User.age < 25, User.age > 18)
   """
+  
+  __metaclass__ = PropertiedClass
+  
+  @classmethod
+  def _collection(cls):
+    """
+    ' PURPOSE
+    '   Returns the MongoDB collection for this model.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   MongoDB collection
+    """
+    return getattr(rawdb, cls.__name__)
   
   @classmethod
   def delete_all(cls):
@@ -61,17 +91,17 @@ class Model(object):
     ' RETURNS
     '   <int deleted> the count of entities deleted
     """
-    collection = getattr(rawdb, cls.__name__)
+    collection = cls._collection()
     deleted = collection.count()
     collection.drop()
     return deleted
   
   # count = 0 means no limit
   @classmethod
-  def fetch(cls, *args, count=0, keys_only=False):
+  def query(cls, *args):
     """
     ' PURPOSE
-    '   Fetches entities from this model using the provided
+    '   Queries entities from this model using the provided
     '   filters. A filter is created by comparing a model's
     '   property at a class level to the desired filter.
     '
@@ -96,24 +126,9 @@ class Model(object):
     '   optional <bool keys_only> If true, returns the keys of matching
     '                             entities instead of the model instances.
     ' RETURNS
-    '   <list MyModel extends db.Model> if not keys_only
-    '   <list db.Key> if keys_only
+    '   <Query query>
     """
-    # TODO change to a smart generator. Allowing indexed gets
-    # but will simply iterate to the index to get it.
-    bson = query.AND(*args).bson(cls)
-    
-    collection = getattr(rawdb, cls.__name__)
-    cursor = collection.find(bson, limit=count, projection={ '_id':1 })
-    
-    documents = []
-    
-    for document in cursor:
-      if keys_only: documents.append(Key(cls, str(document['_id'])))
-      else: documents.append(cls(id=str(document['_id'])))
-      
-    documents.reverse()
-    return documents
+    return Query(cls, AND(*args))
   
   @classmethod
   def key_from_id(cls, id):
@@ -240,7 +255,7 @@ class Model(object):
     """
     if not self.key: return
     
-    collection = getattr(rawdb, self.__class__.__name__)
+    collection = self._collection()
     entity = collection.find_one({'_id': ObjectId(self.key.id)})
     if not entity:
       raise ValueError('Entity does not exist')
@@ -263,7 +278,7 @@ class Model(object):
     '   1. New entities have no key value until this method
     '      has been executed successfuly.
     """
-    collection = getattr(rawdb, self.__class__.__name__)
+    collection = self._collection()
     if self.key == None:
       # create new database entry
       saved = collection.insert_one(self.packed())
@@ -287,3 +302,27 @@ class Model(object):
     '   Nothing
     """
     self.key.delete()
+  
+  def __repr__(self):
+    """
+    ' see self.__str__
+    """
+    return self.__str__()
+  
+  def __str__(self):
+    """
+    ' PURPOSE
+    '   Condensed, unique representation of the Model data.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <str str_value>
+    """
+    props = []
+    
+    for name, _ in (self.get_properties() + [('key', 0)]):
+      val = getattr(self, name)
+      if not val is None:
+        props.append('%s=%s' % (name, repr(val)))
+    
+    return '%s(%s)' % (self.__class__.__name__, ', '.join(props))

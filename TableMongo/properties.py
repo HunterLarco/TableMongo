@@ -6,6 +6,17 @@ class PropertyQuery(object):
   '   to track query filters. See the Model class for details.
   """
   
+  INVERSE_OPERTORS = {
+    '==': '!=',
+    '<': '>=',
+    '>': '<=',
+    '!=': '==',
+    '<=': '>',
+    '>=': '<',
+    'in': 'not in',
+    'not in': 'in'
+  }
+  
   def __init__(self, prop, val, operator):
     """
     ' PURPOSE
@@ -21,7 +32,66 @@ class PropertyQuery(object):
     self.property = prop
     self.value = val
     self.operator = operator
+  
+  def flipped(self):
+    """
+    ' PURPOSE
+    '   Returns a new PropertyQuery object containing the
+    '   inverted comparison of this PropertyQuery. AKA flips the
+    '   operator.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <PropertyQuery prop_query>
+    """
+    return PropertyQuery(self.property, self.value, self.INVERSE_OPERTORS[self.operator])
+  
+  def __repr__(self):
+    """
+    ' see self.__str__
+    """
+    return self.__str__()
+  
+  def __str__(self):
+    """
+    ' PURPOSE
+    '   Condensed, unique representation of the PropertyQuery data.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <str str_value>
+    """
+    return 'PropertyQuery(%s %s %s)' % (self.property, self.operator, repr(self.value))
 
+
+
+class SortDescriptor(object):
+  """
+  ' PURPOSE
+  '   Used to describe sort directions. Created whenever a property
+  '   is negated or positive-thing : +Property or -Property.
+  """
+  
+  DESCENDING = 'down'
+  ASCENDING = 'up'
+  
+  def __init__(self, prop, direction):
+    """
+    ' PURPOSE
+    '   Initializes this class with the original property as
+    '   well as direction based on the class variables.
+    ' PARAMETERS
+    '   <Property prop>
+    '   <str direction>
+    ' RETURNS
+    '   Nothing
+    """
+    self.property = prop
+    self.direction = direction
+
+
+class BadValueError(Exception):
+  pass
 
 
 """
@@ -36,8 +106,17 @@ class Property(object):
   '   how to unpack the same data.
   """
   
-  def __init__(self, multiple=False):
-    self.multiple = multiple
+  def _load_meta(self, kind=None, name=None):
+    self._kind = kind
+    self._name = name
+  
+  def __init__(self, multiple=False, default=None, required=False):
+    if not default is None and required:
+      raise ValueError('A property cannot have a default value and be required')
+    
+    self._multiple = multiple
+    self._default = default
+    self._required = required
   
   def _pack(self, value):
     """
@@ -54,10 +133,17 @@ class Property(object):
     '   <list object value> if self.multiple
     '   <object value> if not self.multiple
     """
-    if self.multiple:
-      if not isinstance(value, list): raise ValueError('Property with keyword multiple must contain a list of values')
+    if value == None:
+      if self._required: raise BadValueError('Entity has uninitialized properties: %s' % self._name)
+      
+      if self._default == None: return None
+      else: return self._pack(self._default)
+    
+    if self._multiple:
+      if not isinstance(value, list): raise BadValueError('Expected list or tuple, got %s' % value)
       return [self.pack(obj) for obj in value]
-    else: return self.pack(value)
+    
+    return self.pack(value)
   
   def _unpack(self, value):
     """
@@ -74,8 +160,12 @@ class Property(object):
     '   <list object value> if self.multiple
     '   <object value> if not self.multiple
     """
-    if self.multiple:
-      if not isinstance(value, list): raise ValueError('Property with keyword multiple must contain a list of values')
+    if value == None:
+      if self._default == None: return None
+      else: return self._unpack(self._default)
+    
+    if self._multiple:
+      if not isinstance(value, list): return [self.unpack(value)]
       return [self.unpack(obj) for obj in value]
     else: return self.unpack(value)
   
@@ -88,8 +178,8 @@ class Property(object):
     ' RETURNS
     '   <object value> unpacked value
     """
-    raise ValueError('All properties must be a subclass of Property and have overridden unpack')
-  
+    raise NotImplementedError()
+      
   def pack(self, value):
     """
     ' PURPOSE
@@ -99,7 +189,7 @@ class Property(object):
     ' RETURNS
     '   <object value> packed value
     """
-    raise ValueError('All properties must be a subclass of Property and have overridden pack')
+    raise NotImplementedError()
   
   def __hash__(self):
     """
@@ -130,30 +220,58 @@ class Property(object):
   """
   
   def __eq__(self, other):
-    if self.multiple:
-      from .query import AND
-      if not isinstance(other, list): other = [other]
-      return AND(*[PropertyQuery(self, [item], '$in') for item in other])
-    return PropertyQuery(self, other, '$eq')
+    if self._multiple: return self._contains(other)
+    return PropertyQuery(self, other, '==')
   
   def __lt__(self, other):
-    return PropertyQuery(self, other, '$lt')
+    return PropertyQuery(self, other, '<')
   
   def __gt__(self, other):
-    return PropertyQuery(self, other, '$gt')
+    return PropertyQuery(self, other, '>')
   
   def __ne__(self, other):
-    if self.multiple:
-      from .query import OR
-      if not isinstance(other, list): other = [other]
-      return OR(*[PropertyQuery(self, [item], '$nin') for item in other])
-    return PropertyQuery(self, other, '$ne')
+    if self._multiple: return self._not_contains(other)
+    return PropertyQuery(self, other, '!=')
   
   def __le__(self, other):
-    return PropertyQuery(self, other, '$lte')
+    return PropertyQuery(self, other, '<=')
   
   def __ge__(self, other):
-    return PropertyQuery(self, other, '$gte')
+    return PropertyQuery(self, other, '>=')
+  
+  def __neg__(self):
+    return SortDescriptor(self, SortDescriptor.DESCENDING)
+  
+  def __pos__(self):
+    return SortDescriptor(self, SortDescriptor.ASCENDING)
+  
+  def _contains(self, other):
+    if not self._multiple:
+      raise BadValueError('Expected multiple property to sort using in: %s' % self._name)
+    from .query import AND
+    if not isinstance(other, list): other = [other]
+    return AND(*[PropertyQuery(self, [item], 'in') for item in other])
+  
+  def _not_contains(self, other):
+    from .query import NOT
+    return NOT(self._contains(other))
+  
+  def __repr__(self):
+    """
+    ' see self.__str__
+    """
+    return self.__str__()
+  
+  def __str__(self):
+    """
+    ' PURPOSE
+    '   Condensed, unique representation of the Property's data.
+    ' PARAMETERS
+    '   None
+    ' RETURNS
+    '   <str str_value>
+    """
+    return '%s(\'%s\')' % (self.__class__.__name__, self._name)
 
 
 """ BASIC PROPERTIES BELOW """
@@ -161,11 +279,9 @@ class Property(object):
 class BooleanProperty(Property):
   
   def unpack(self, value):
-    if value == None: return None
     return value
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, bool):
       raise ValueError('BooleanProperty must contain bool instance')
     return value
@@ -173,11 +289,9 @@ class BooleanProperty(Property):
 
 class StringProperty(Property):
   def unpack(self, value):
-    if value == None: return None
     return value
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, str):
       raise ValueError('StringProperty must contain str instance')
     return value
@@ -185,11 +299,9 @@ class StringProperty(Property):
 
 class ByteStringProperty(Property):
   def unpack(self, value):
-    if value == None: return None
     return value.encode('utf-8')
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, bytes):
       raise ValueError('ByteStringProperty must contain bytes instance')
     return value.decode('utf-8')
@@ -197,11 +309,9 @@ class ByteStringProperty(Property):
 
 class IntegerProperty(Property):
   def unpack(self, value):
-    if value == None: return None
     return value
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, int):
       raise ValueError('IntegerProperty must contain int instance')
     return value
@@ -209,11 +319,9 @@ class IntegerProperty(Property):
 
 class FloatProperty(Property):
   def unpack(self, value):
-    if value == None: return None
     return value
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, float):
       raise ValueError('FloatProperty must contain float instance')
     return value
@@ -221,12 +329,10 @@ class FloatProperty(Property):
 
 class KeyProperty(Property):
   def unpack(self, value):
-    if value == None: return None
     from .key import Key
     return Key(serial=value)
   
   def pack(self, value):
-    if value == None: return None
     from .key import Key
     if not isinstance(value, Key):
       raise ValueError('KeyProperty must contain Key instance')
@@ -243,7 +349,6 @@ class ModelProperty(KeyProperty):
     return super(ModelProperty, self).unpack(value).get()
   
   def pack(self, value):
-    if value == None: return None
     if not isinstance(value, self._model):
       raise ValueError('ModelProperty must contain %s instance' % self._model.__name__)
     return super(ModelProperty, self).pack(value.key)
