@@ -59,7 +59,7 @@ user.set_password('p@assword')
 user.save()
 
 #query
-users = User.fetch(User.email == 'john@doe.com')
+users = User.query(User.email == 'john@doe.com')
 ```
 
 ### Creating trips
@@ -98,13 +98,13 @@ class Trip(db.Model):
 We can now easily query trips by the user that created them and save multiple coordinates in them.
 
 ```python
-user = User.fetch(User.email == 'john@doe.com')[0]
+user = User.query(User.email == 'john@doe.com').get()
 
 coordinates = [Coordinate(4, 5), Coordinate(8, -2)]
 trip = Trip(author=user, waypoints=coordinates)
 trip.save()
 
-user_trips = Trip.fetch(Trip.author == user)
+user_trips = Trip.query(Trip.author == user)
 ```
 
 ### Summary

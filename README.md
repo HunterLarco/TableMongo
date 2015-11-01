@@ -20,7 +20,7 @@ User(
   favourite_things=['apples', 'pie']
 ).save()
 
-users = User.fetch(User.email == 'john@doe.com')
+users = User.query(User.email == 'john@doe.com')
 ```
 
 ## Installation
