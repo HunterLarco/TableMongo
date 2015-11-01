@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
   name='TableMongo',
-  version='1.0.1',
+  version='1.0.2',
   description='TableMongo. A MongoDB ORM based on Google\'s BigTable Syntax',
   url='https://github.com/HunterLarco/TableMongo',
   author='Hunter John Larco',
