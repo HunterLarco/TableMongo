@@ -1,5 +1,5 @@
 """ LOCAL IMPORTS """
-from .properties import Property, PropertyQuery
+from .properties import Property, PropertyQuery, PropertyList
 from .key import Key
 from .query import *
 
@@ -24,11 +24,18 @@ class PropertiedClass(type):
   """
   
   def __new__(cls, name, parents, dct):
+    self = super(PropertiedClass, cls).__new__(cls, name, parents, dct)
+    
+    props = []
+    
     for key, value in dct.items():
       if isinstance(value, Property):
-        value._load_meta(kind=cls, name=key)
+        value._load_meta(kind=self, name=key)
+        props.append(value)
     
-    return super(PropertiedClass, cls).__new__(cls, name, parents, dct)
+    self._properties = PropertyList(props)
+    
+    return self
 
 
 class Model(object):
@@ -156,27 +163,12 @@ class Model(object):
     """
     return cls.key_from_id(id).get()
   
+  def kind(self):
+    return self.__class__
+  
   @classmethod
-  def get_properties(cls):
-    """
-    ' PURPOSE
-    '   Returns a list of properties associated with this model.
-    ' PARAMETERS
-    '   None
-    ' RETURNS
-    '   <list (str name, Property type)>
-    ' NOTES
-    '   1. The returned list contains tuples where the first item
-    '      is the string name of the property for example 'email' or 'age'
-    '      while the second item is the actual PropertyClass, for example
-    '      StringProperty or FloatProperty.
-    """
-    properties = []
-    for attr in vars(cls):
-      val = getattr(cls, attr)
-      if isinstance(val, Property):
-        properties.append((attr, val.__class__))
-    return properties
+  def properties(cls):
+    return cls._properties
   
   def __init__(self, key=None, id=None, **kwargs):
     """
@@ -200,12 +192,8 @@ class Model(object):
     '      Now this entity will be initialized with the properties for 'prop1'
     '      and 'float1' already filled in.
     """
-    self._properties = []
-    for attr in vars(self.__class__):
-      val = getattr(self.__class__, attr)
-      if isinstance(val, Property):
-        self._properties.append(attr)
-        setattr(self, attr, None)
+    for prop in self.properties():
+      setattr(self, prop.name(), None)
     
     if key:
       self.key = key
@@ -220,7 +208,7 @@ class Model(object):
       self.kind = self.__class__.__name__
     
     for prop, value in kwargs.items():
-      if prop in self._properties:
+      if prop in self.properties():
         setattr(self, prop, value)
   
   def packed(self, meta=False):
@@ -235,9 +223,8 @@ class Model(object):
     '   <dict data>
     """
     json = {}
-    for attr in self._properties:
-      packer = getattr(self.__class__, attr)
-      json[attr] = packer._pack(getattr(self, attr))
+    for prop in self.properties():
+      json[prop.name()] = prop._pack(getattr(self, prop.name()))
     if meta:
       json['key'] = self.key.serialize()
       json['id'] = self.key.id
@@ -263,8 +250,8 @@ class Model(object):
     reserved = ['_id']
     for key, value in entity.items():
       if not key in reserved:
-        packer = getattr(self.__class__, key)
-        setattr(self, key, packer._unpack(value))
+        prop = getattr(self.__class__, key)
+        setattr(self, key, prop._unpack(value))
   
   def save(self):
     """
@@ -318,11 +305,14 @@ class Model(object):
     ' RETURNS
     '   <str str_value>
     """
-    props = []
+    props = list(self.properties().names()) + ['key']
+    formatted = []
     
-    for name, _ in (self.get_properties() + [('key', 0)]):
+    for name in props:
       val = getattr(self, name)
       if not val is None:
-        props.append('%s=%s' % (name, repr(val)))
+        formatted.append('%s=%s' % (name, repr(val)))
     
-    return '%s(%s)' % (self.__class__.__name__, ', '.join(props))
+    formatted = ', '.join(formatted)
+    
+    return '%s(%s)' % (self.__class__.__name__, formatted)

@@ -1,3 +1,15 @@
+class PropertyList(tuple):
+  
+  def names(self):
+    return tuple([prop.name() for prop in self])
+  
+  def __contains__(self, value):
+    for prop in self:
+      if prop.name() == value:
+        return True
+    return False
+
+
 class PropertyQuery(object):
   """
   ' PURPOSE
@@ -105,6 +117,24 @@ class Property(object):
   '   to store their value in a JSON document as well as to dictate
   '   how to unpack the same data.
   """
+  
+  def type(self):
+    return self.__class__
+  
+  def kind(self):
+    return self._kind
+  
+  def name(self):
+    return self._name
+  
+  def is_multiple(self):
+    return self._multiple
+  
+  def default(self):
+    return self._default 
+  
+  def is_required(self):
+    return self._required
   
   def _load_meta(self, kind=None, name=None):
     self._kind = kind
@@ -283,7 +313,7 @@ class BooleanProperty(Property):
   
   def pack(self, value):
     if not isinstance(value, bool):
-      raise ValueError('BooleanProperty must contain bool instance')
+      raise BadValueError('BooleanProperty must contain bool instance')
     return value
 
 
@@ -293,7 +323,7 @@ class StringProperty(Property):
   
   def pack(self, value):
     if not isinstance(value, str):
-      raise ValueError('StringProperty must contain str instance')
+      raise BadValueError('StringProperty must contain str instance')
     return value
 
 
@@ -303,7 +333,7 @@ class ByteStringProperty(Property):
   
   def pack(self, value):
     if not isinstance(value, bytes):
-      raise ValueError('ByteStringProperty must contain bytes instance')
+      raise BadValueError('ByteStringProperty must contain bytes instance')
     return value.decode('utf-8')
 
 
@@ -313,7 +343,7 @@ class IntegerProperty(Property):
   
   def pack(self, value):
     if not isinstance(value, int):
-      raise ValueError('IntegerProperty must contain int instance')
+      raise BadValueError('IntegerProperty must contain int instance')
     return value
 
 
@@ -323,7 +353,7 @@ class FloatProperty(Property):
   
   def pack(self, value):
     if not isinstance(value, float):
-      raise ValueError('FloatProperty must contain float instance')
+      raise BadValueError('FloatProperty must contain float instance')
     return value
 
 
@@ -335,7 +365,7 @@ class KeyProperty(Property):
   def pack(self, value):
     from .key import Key
     if not isinstance(value, Key):
-      raise ValueError('KeyProperty must contain Key instance')
+      raise BadValueError('KeyProperty must contain Key instance')
     return value.serialize()
 
 
@@ -350,6 +380,6 @@ class ModelProperty(KeyProperty):
   
   def pack(self, value):
     if not isinstance(value, self._model):
-      raise ValueError('ModelProperty must contain %s instance' % self._model.__name__)
+      raise BadValueError('ModelProperty must contain %s instance' % self._model.__name__)
     return super(ModelProperty, self).pack(value.key)
 
