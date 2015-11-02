@@ -30,10 +30,12 @@ class Coordinate(object):
     return 'Coordinate(x=%s, y=%s)' % (self.x, self.y)
 
 class CoordinateProperty(db.Property):
+  
+  @staticmethod
+  def type():
+    return Coordinate
 
   def pack(self, value):
-    if not isinstance(value, Coordinate):
-      raise ValueError('CoordinateProperty must contain coordinate instance')
     return [value.x, value.y]
 
   def unpack(self, value):

@@ -118,8 +118,9 @@ class Property(object):
   '   how to unpack the same data.
   """
   
-  def type(self):
-    return self.__class__
+  @staticmethod
+  def type():
+    return None
   
   def kind(self):
     return self._kind
@@ -170,9 +171,25 @@ class Property(object):
       else: return self._pack(self._default)
     
     if self._multiple:
-      if not isinstance(value, list): raise BadValueError('Expected list or tuple, got %s' % value)
-      return [self.pack(obj) for obj in value]
+      if not isinstance(value, list): raise BadValueError('%s expected list or tuple, got %s' % (self, value))
+      return [self._checktype(obj) for obj in value]
     
+    return self._checktype(value)
+  
+  def _checktype(self, value):
+    """
+    ' PURPOSE
+    '   Checks that the given value is the correct type based on the
+    '   self.type() method.
+    ' PARAMETERS
+    '   <object value>
+    ' RETURNS
+    '   <object packed_value>
+    ' ERRORS
+    '   BadValueError ~ if incorrect type
+    """
+    if not self.type() is None and not isinstance(value, self.type()):
+      raise BadValueError('%s expected type %s. Got %s' % (self, self.type().__name__, value))
     return self.pack(value)
   
   def _unpack(self, value):
@@ -304,82 +321,100 @@ class Property(object):
     return '%s(\'%s\')' % (self.__class__.__name__, self._name)
 
 
+
 """ BASIC PROPERTIES BELOW """
 
 class BooleanProperty(Property):
   
+  @staticmethod
+  def type():
+    return bool
+  
   def unpack(self, value):
     return value
   
   def pack(self, value):
-    if not isinstance(value, bool):
-      raise BadValueError('BooleanProperty must contain bool instance')
     return value
 
 
 class StringProperty(Property):
+  
+  @staticmethod
+  def type():
+    return str
+  
   def unpack(self, value):
     return value
   
   def pack(self, value):
-    if not isinstance(value, str):
-      raise BadValueError('StringProperty must contain str instance')
     return value
 
 
 class ByteStringProperty(Property):
+  
+  @staticmethod
+  def type():
+    return bytes
+  
   def unpack(self, value):
     return value.encode('utf-8')
   
   def pack(self, value):
-    if not isinstance(value, bytes):
-      raise BadValueError('ByteStringProperty must contain bytes instance')
     return value.decode('utf-8')
 
 
 class IntegerProperty(Property):
+  
+  @staticmethod
+  def type():
+    return int
+  
   def unpack(self, value):
-    return value
+    return int(value)
   
   def pack(self, value):
-    if not isinstance(value, int):
-      raise BadValueError('IntegerProperty must contain int instance')
     return value
 
 
 class FloatProperty(Property):
+  
+  @staticmethod
+  def type():
+    return float
+  
   def unpack(self, value):
-    return value
+    return float(value)
   
   def pack(self, value):
-    if not isinstance(value, float):
-      raise BadValueError('FloatProperty must contain float instance')
     return value
 
 
+from .key import Key
 class KeyProperty(Property):
+  
+  @staticmethod
+  def type():
+    return Key
+  
   def unpack(self, value):
-    from .key import Key
     return Key(serial=value)
   
   def pack(self, value):
-    from .key import Key
-    if not isinstance(value, Key):
-      raise BadValueError('KeyProperty must contain Key instance')
     return value.serialize()
 
 
 class ModelProperty(KeyProperty):
   
+  def type(self):
+    return self._type
+  
   def __init__(self, model, *args, **kwargs):
-    super(KeyProperty, self).__init__(*args, **kwargs)
-    self._model = model
+    super(ModelProperty, self).__init__(*args, **kwargs)
+    self._type = model
   
   def unpack(self, value):
     return super(ModelProperty, self).unpack(value).get()
   
   def pack(self, value):
-    if not isinstance(value, self._model):
-      raise BadValueError('ModelProperty must contain %s instance' % self._model.__name__)
     return super(ModelProperty, self).pack(value.key)
 
