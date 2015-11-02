@@ -6,7 +6,16 @@ class TestCases(unittest.TestCase):
   
   def setUp(self):
     pass
+  
+  def test_meta_class(self):
+    arr_equals = lambda a, b: len(set(a) ^ set(b)) == 0
     
+    user_props = User.properties().names()
+    assert arr_equals(user_props, ['email', 'password'])
+    
+    trip_props = Trip.properties().names()
+    assert arr_equals(trip_props, ['author', 'waypoints'])
+  
   def test_property_options(self):
     pass
 
