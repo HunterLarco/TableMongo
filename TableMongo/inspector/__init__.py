@@ -1,6 +1,4 @@
 def run(port=8000, debug=False):
-  print('db development server running on port %s' % port)
-  
   import SimpleHTTPServer
   import SocketServer
 
@@ -9,9 +7,6 @@ def run(port=8000, debug=False):
   class MyRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
     
     def do_GET(self):
-      
-      print(dir(self.request))
-
       # Parse query data & params to find out what was passed
       parsedParams = urlparse.urlparse(self.path)
       queryParsed = urlparse.parse_qs(parsedParams.query)
@@ -20,7 +15,7 @@ def run(port=8000, debug=False):
       if parsedParams.path == "/test":
         self.processMyRequest(queryParsed)
       else:
-        # Default to serve up a local file 
+        # Default to serve up a local file
         SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self);
 
     def processMyRequest(self, query):
@@ -33,7 +28,12 @@ def run(port=8000, debug=False):
 
       file = open(os.path.join(os.path.dirname(__file__), 'templates/main.html'), 'rb')
       html = file.read()
-      self.wfile.write(html)
+      
+      from jinja2 import Template
+      template = Template(html)
+      templated = template.render(models=['Test Jinja2'])
+      
+      self.wfile.write(templated)
       self.wfile.close();
 
   if not debug:
@@ -43,7 +43,8 @@ def run(port=8000, debug=False):
   server = SocketServer.TCPServer(('', port), Handler)
 
   try:
+    print('db development server running on port %s' % port)
     server.serve_forever()
   except KeyboardInterrupt:
-    pass
+    print('Server closed')
     server.server_close()
