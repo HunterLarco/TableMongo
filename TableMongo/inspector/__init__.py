@@ -42,4 +42,8 @@ def run(port=8000, debug=False):
   Handler = MyRequestHandler
   server = SocketServer.TCPServer(('', port), Handler)
 
-  server.serve_forever()
+  try:
+    server.serve_forever()
+  except KeyboardInterrupt:
+    pass
+    server.server_close()
