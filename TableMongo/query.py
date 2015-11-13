@@ -147,12 +147,6 @@ class Query(object):
   
   def __repr__(self):
     """
-    ' see self.__str__
-    """
-    return self.__str__()
-  
-  def __str__(self):
-    """
     ' PURPOSE
     '   Condensed, unique representation of the Query data.
     ' PARAMETERS
@@ -160,7 +154,7 @@ class Query(object):
     ' RETURNS
     '   <str str_value>
     """
-    return '%s(kind=\'%s\', filters=%s)' % (self.__class__.__name__, self._model.__name__, self._logic_chain)
+    return '%s(kind=%s, filters=%s)' % (self.__class__.__name__, self._model.__name__, self._logic_chain)
 
 
 class LogicOperator(object):
@@ -250,12 +244,6 @@ class AND(LogicOperator):
   
   def __repr__(self):
     """
-    ' see self.__str__
-    """
-    return self.__str__()
-  
-  def __str__(self):
-    """
     ' PURPOSE
     '   Condensed, unique representation of the AND data.
     ' PARAMETERS
@@ -343,12 +331,6 @@ class OR(LogicOperator):
   
   def __repr__(self):
     """
-    ' see self.__str__
-    """
-    return self.__str__()
-  
-  def __str__(self):
-    """
     ' PURPOSE
     '   Condensed, unique representation of the OR data.
     ' PARAMETERS
@@ -421,12 +403,6 @@ class NOT(LogicOperator):
     return not_query.bson()
   
   def __repr__(self):
-    """
-    ' see self.__str__
-    """
-    return self.__str__()
-  
-  def __str__(self):
     """
     ' PURPOSE
     '   Condensed, unique representation of the NOT data.

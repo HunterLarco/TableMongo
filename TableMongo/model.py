@@ -292,12 +292,6 @@ class Model(object):
   
   def __repr__(self):
     """
-    ' see self.__str__
-    """
-    return self.__str__()
-  
-  def __str__(self):
-    """
     ' PURPOSE
     '   Condensed, unique representation of the Model data.
     ' PARAMETERS
@@ -311,7 +305,7 @@ class Model(object):
     for name in props:
       val = getattr(self, name)
       if not val is None:
-        formatted.append('%s=%s' % (name, repr(val)))
+        formatted.append('%s=%s' % (name, val))
     
     formatted = ', '.join(formatted)
     

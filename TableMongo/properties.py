@@ -60,12 +60,6 @@ class PropertyQuery(object):
   
   def __repr__(self):
     """
-    ' see self.__str__
-    """
-    return self.__str__()
-  
-  def __str__(self):
-    """
     ' PURPOSE
     '   Condensed, unique representation of the PropertyQuery data.
     ' PARAMETERS
@@ -73,8 +67,7 @@ class PropertyQuery(object):
     ' RETURNS
     '   <str str_value>
     """
-    return 'PropertyQuery(%s %s %s)' % (self.property, self.operator, repr(self.value))
-
+    return 'PropertyQuery(%s %s %s)' % (self.property, self.operator, self.value)
 
 
 class SortDescriptor(object):
@@ -305,12 +298,6 @@ class Property(object):
   
   def __repr__(self):
     """
-    ' see self.__str__
-    """
-    return self.__str__()
-  
-  def __str__(self):
-    """
     ' PURPOSE
     '   Condensed, unique representation of the Property's data.
     ' PARAMETERS
@@ -318,7 +305,7 @@ class Property(object):
     ' RETURNS
     '   <str str_value>
     """
-    return '%s(\'%s\')' % (self.__class__.__name__, self._name)
+    return '%s(%s)' % (self.__class__.__name__, self._name)
 
 
 
