@@ -6,4 +6,4 @@ import TableMongo as db
 
 
 if __name__ == '__main__':
-  db.inspector.run()
+  db.inspector.run(port=8080, debug=True)
